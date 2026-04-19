@@ -14,6 +14,26 @@ def send(msg):
     except Exception as e:
         print("❌ Erreur Telegram:", e)
 
+def get_price(data):
+    try:
+        # 🔥 FIX PRINCIPAL
+        if isinstance(data.columns, pd.MultiIndex):
+            close = data["Close"].iloc[:, 0]  # prend la bonne colonne
+        else:
+            close = data["Close"]
+
+        close = close.dropna()
+
+        if len(close) == 0:
+            return None
+
+        return float(close.iloc[-1])
+
+    except Exception as e:
+        print("❌ erreur extraction prix:", e)
+        return None
+
+
 def analyze():
     print("🔍 Lancement analyse...")
 
@@ -21,7 +41,7 @@ def analyze():
         df = pd.read_csv("portfolio.csv")
         print("✅ Portfolio chargé")
     except Exception as e:
-        print("❌ Erreur lecture CSV:", e)
+        print("❌ Erreur CSV:", e)
         return
 
     for _, row in df.iterrows():
@@ -32,25 +52,29 @@ def analyze():
 
             print(f"➡️ Analyse {asset} ({ticker})")
 
-            data = yf.download(ticker, period="1d", interval="1h")
+            data = yf.download(
+                ticker,
+                period="1d",
+                interval="1h",
+                auto_adjust=True,
+                progress=False
+            )
 
             if data is None or data.empty:
                 print(f"⚠️ Pas de données pour {ticker}")
                 continue
 
-            # 🔒 VERSION SAFE
-            close_data = data["Close"].dropna()
+            price = get_price(data)
 
-            if len(close_data) == 0:
-                print(f"⚠️ Pas de prix exploitable pour {ticker}")
+            if price is None:
+                print(f"⚠️ Prix introuvable pour {ticker}")
                 continue
 
-            price = float(close_data.values[-1])
             change = ((price - pru) / pru) * 100
 
             print(f"💰 {asset} prix: {price} | perf: {round(change,2)}%")
 
-            # 🧪 TEST TEMPORAIRE (envoie toujours un message)
+            # 🧪 TEST TEMPORAIRE
             send(f"📊 {asset}\nPrix: {price}\nPerf: {round(change,2)}%")
 
         except Exception as e:
