@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Portfolio Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #0b1220;
+            color: white;
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            gap: 20px;
+        }
+
+        .box {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .card {
+            background: #111827;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 10px;
+        }
+
+        .green { color: #22c55e; }
+        .red { color: #ef4444; }
+    </style>
+</head>
+
+<body>
+
+<h1>📊 Dashboard</h1>
+
+<div class="header">
+    <div class="box">💰 Valeur : {{ value }} €</div>
+    <div class="box">📈 Perf : {{ perf }} %</div>
+</div>
+
+{% for item in data %}
+
+<div class="card">
+    <h2>{{ item.asset }} ({{ item.ticker }})</h2>
+
+    <p>Prix : {{ item.price }}</p>
+    <p>PRU : {{ item.pru }}</p>
+
+    <p class="{% if item.change > 0 %}green{% else %}red{% endif %}">
+        Perf : {{ item.change }} %
+    </p>
+
+    <canvas id="chart{{ loop.index }}"></canvas>
+</div>
+
+<script>
+const ctx{{ loop.index }} = document.getElementById('chart{{ loop.index }}');
+
+new Chart(ctx{{ loop.index }}, {
+    type: 'line',
+    data: {
+        labels: Array.from({length: {{ item.chart|length }}}, (_, i) => i),
+        datasets: [{
+            data: {{ item.chart }},
+            borderColor: '#3b82f6',
+            borderWidth: 2,
+            pointRadius: 0
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } }
+    }
+});
+</script>
+
+{% endfor %}
+
+</body>
+</html>
