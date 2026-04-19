@@ -12,24 +12,33 @@ def send(msg):
     requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
 
 def analyze():
-    df = pd.read_csv("portfolio.csv")
+    try:
+        df = pd.read_csv("portfolio.csv")
+    except Exception as e:
+        print("❌ erreur lecture portfolio:", e)
+        return
 
     for _, row in df.iterrows():
-        data = yf.download(row["ticker"], period="1d", interval="1h")
+        try:
+            data = yf.download(row["ticker"], period="1d", interval="1h")
 
-        if data.empty:
-            continue
+            if data.empty:
+                print(f"⚠️ pas de data pour {row['ticker']}")
+                continue
 
-        price = float(data["Close"].iloc[-1])
-        change = ((price - row["pru"]) / row["pru"]) * 100
+            price = float(data["Close"].iloc[-1])
+            change = ((price - row["pru"]) / row["pru"]) * 100
 
-        if change > 5:
-            signal = "🚀 OPPORTUNITÉ (RENFORCER)"
-            send(f"{row['asset']} → {signal}\nPerf: {round(change,2)}%")
+            print(f"{row['asset']} → {price} ({round(change,2)}%)")
 
-        elif change < -5:
-            signal = "⚠️ RISQUE (SURVEILLER / VENDRE)"
-            send(f"{row['asset']} → {signal}\nPerf: {round(change,2)}%")
+            if change > 5:
+                send(f"🚀 {row['asset']} opportunité\nPerf: {round(change,2)}%")
+
+            elif change < -5:
+                send(f"⚠️ {row['asset']} risque\nPerf: {round(change,2)}%")
+
+        except Exception as e:
+            print(f"❌ erreur sur {row['asset']}:", e)
 
 print("✅ BOT ANALYSE LANCÉ")
 
